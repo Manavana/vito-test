@@ -1,5 +1,5 @@
 const graphql = require('graphql');
-const connections = require('graphql-connections')
+//const connections = require('graphql-connections')
 
 const nano = require('nano')('http://admin:123@localhost:5984');
 const test_db = nano.db.use('vito_test_db');
@@ -84,7 +84,7 @@ const friendType = new GraphQLObjectType({
     }),
 });
 
-// Pagination scheme
+// Pagination scheme should be here
 
 const queryRootType = new GraphQLObjectType({
     name: "Query",

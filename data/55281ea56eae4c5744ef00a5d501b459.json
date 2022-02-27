@@ -1,0 +1,10 @@
+{
+  "_id": "55281ea56eae4c5744ef00a5d501b459",
+  "user_id": "004",
+  "first_name": "John",
+  "last_name": "Doe",
+  "phone_number": [
+    "+This-is-John-Doe's-phone-number-0",
+    "+This-is-John-Doe's-phone-number-1"
+  ]
+}
