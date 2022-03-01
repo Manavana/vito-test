@@ -6,7 +6,7 @@ const test_db = nano.db.use('vito_test_db');
 
 const { GraphQLID, GraphQLString, GraphQLList, GraphQLObjectType, GraphQLSchema, GraphQLInt, GraphQLScalarType } = graphql;
 
-async function getUserCard(id) {
+async function getCard(id) {
     const doc = await test_db.get(id);
     return doc;
 };
@@ -21,26 +21,34 @@ async function findByFullName(fullName) {
                 },
                 {
                     last_name: { "$eq": fullName.slice(indStr + 1) }
-                }
+                },
             ]
         },
         fields: ["_id", "user_id", "first_name", "last_name", "phone_number"]
     };
     const response = await test_db.find(data);
-    const file = JSON.parse(JSON.stringify(response));
-    return file.docs;
+    return response.docs;
 };
 
-async function friendList() {
+async function viewAll(type) {
     const doclist = await test_db.list({ include_docs: true });
-    let dataList = [];
+    var userList = [];
+    var phoneList = [];
     for (let i = 0; i < doclist.rows.length; i++) {
-        dataList.push(doclist.rows[i].doc);
+        if (doclist.rows[i].doc.user_id) {
+            userList.push(doclist.rows[i].doc);
+        } else {
+            phoneList.push(doclist.rows[i].doc);
+        };
     };
-    return dataList;
+    if (type == "user") {
+        return userList;
+    } else {
+        return phoneList;
+    }
 };
 
-async function findByArbitraryStringKey(stringKey) {
+async function findByStringKey(stringKey) {
     let indStr = stringKey.indexOf(" ");
 
     if (indStr == -1) {
@@ -64,16 +72,53 @@ async function findByArbitraryStringKey(stringKey) {
                 {
                     phone_number: { "$elemMatch": { "$eq": stringKey.slice(0, endStr) } }
                 },
+                {
+                    userID: { "$elemMatch": { "$eq": stringKey.slice(0, endStr) } }
+                },
+                {
+                    brand: { "$eq": stringKey.slice(0, endStr) }
+                },
+                {
+                    model: { "$elemMatch": { "$eq": stringKey.slice(0, endStr) } }
+                },
             ]
         },
-        fields: ["_id", "user_id", "first_name", "last_name", "phone_number"]
+        fields: ["_id", "user_id", "first_name", "last_name", "phone_number", "userID", "brand", "model"]
     };
     const response = await test_db.find(data);
-    const file = JSON.parse(JSON.stringify(response));
-    return file.docs;
+    return response.docs;
 };
 
-const friendType = new GraphQLObjectType({
+async function separateLists(stringKey, type) {
+    const docList = await findByStringKey(stringKey);
+
+    var userList = [];
+    var phoneList = [];
+
+    for (let i = 0; i < docList.length; i++) {
+        if (docList[i].user_id) {
+            userList.push(docList[i]);
+        } else {
+            phoneList.push(docList[i]);
+        };
+    };
+    if (type == "user") {
+        return userList;
+    } else {
+        return phoneList;
+    };
+};
+
+async function createUserList(arr) {
+    var userList = [];
+    for (let i = 0; i < arr.length; i++) {
+        let item = await separateLists(arr[i], "user")
+        userList.push(item[0])
+    };
+    return userList;
+};
+
+const userType = new GraphQLObjectType({
     name: "Friend",
     fields: () => ({
         _id: { type: GraphQLID },
@@ -81,6 +126,28 @@ const friendType = new GraphQLObjectType({
         first_name: { type: GraphQLString },
         last_name: { type: GraphQLString },
         phone_number: { type: new GraphQLList(GraphQLString) },
+        phone_model: {
+            type: new GraphQLList(brandType),
+            resolve(source, args) {
+                return separateLists(source.user_id, "phone");
+            },
+        },
+    }),
+});
+
+const brandType = new GraphQLObjectType({
+    name: "Brand",
+    fields: () => ({
+        _id: { type: GraphQLID },
+        userID: { type: new GraphQLList(GraphQLString) },
+        brand: { type: GraphQLString },
+        model: { type: GraphQLString },
+        users: {
+            type: new GraphQLList(userType),
+            resolve(source, args) {
+                return createUserList(source.userID);
+            },
+        },
     }),
 });
 
@@ -89,47 +156,67 @@ const friendType = new GraphQLObjectType({
 const queryRootType = new GraphQLObjectType({
     name: "Query",
     fields: () => ({
-        findByStringKey: {
-            type: new GraphQLList(friendType),
+        /*findByStringKey: {
+            type: new GraphQLList(friendType), // ¬ќ«ћќ∆Ќќ Ќјƒќ ѕ≈–≈ƒ≈Ћј“№, чтобы поиск был во всех доках и дл€ всех типов ??UNION?? или как-то иначе объединить типы??
             args: { stringKey: { type: GraphQLString } },
             resolve(source, { stringKey }) {
                 return findByArbitraryStringKey(stringKey)
             }
-        },
-        friendByID: {
-            type: friendType,
+        },*/
+        userByID: {
+            type: userType,
             args: { id: { type: GraphQLID } },
             resolve(source, { id }) {
-                return getUserCard(id);
+                return getCard(id);
             }
         },
-        friendByName: {
-            type: new GraphQLList(friendType),
+        userByName: {
+            type: new GraphQLList(userType),
             args: { name: { type: GraphQLString } },
             resolve(source, { name }) {
-                return findByArbitraryStringKey(name);
+                return findByStringKey(name);
             }
         },
-        friendByFullName: {
-            type: new GraphQLList(friendType),
+        userByFullName: {
+            type: new GraphQLList(userType),
             args: { fullName: { type: GraphQLString } },
             resolve(source, { fullName }) {
                 return findByFullName(fullName);
             }
         },
-        friendByPhone: {
-            type: new GraphQLList(friendType),
-            args: { phone: { type: GraphQLString } },
-            resolve(source, { phone }) {
-                return findByArbitraryStringKey(phone);
+        userByPhoneNum: {
+            type: new GraphQLList(userType),
+            args: { num: { type: GraphQLString } },
+            resolve(source, { num }) {
+                return findByStringKey(num);
             }
         },
-        friends: {
-            type: new GraphQLList(friendType),
+        users: {
+            type: new GraphQLList(userType),
             resolve() {
-                return friendList();
+                return viewAll("user");
             }
-        }
+        },
+        phoneByID: {
+            type: brandType,
+            args: { id: { type: GraphQLID } },
+            resolve(source, { id }) {
+                return getCard(id);
+            }
+        },
+        phoneByBrand: {
+            type: new GraphQLList(brandType),
+            args: { brand: { type: GraphQLString } },
+            resolve(source, { brand }) {
+                return findByStringKey(brand);
+            }
+        },
+        phones: {
+            type: new GraphQLList(brandType),
+            resolve() {
+                return viewAll("phone");
+            }
+        },
     }),
 });
 
