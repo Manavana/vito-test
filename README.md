@@ -4,91 +4,130 @@
 API allows the user to request only the required data.
 
 ## Getting started
+Before starting work, you need to create a database and fill it with documents. Open the file *`createDB.ts`* and run the script.
 The script is launched through the Developer PowerShell or command line:
 ```c#
-npm start
+npm run create
+```
+When the database is created, a corresponding message will appear on the command line.
+After that you may start the server script by the command:
+```c#
+npm run start
 ```
 The command line will display the message: *Running a GraphQL API server at localhost:3000*.
-Then you need to go to *http://localhost:3000/graphql*
+Then you need to go to *http://localhost:3000/graphql* and enjoy!
 
 ## How to use
-Use the queries from the examples section. You can change the composition of the data output fields.
-*`id`*, *`phone`*, *`name`*, *`fullName`* and *`stringKey`* fields accept string values.
-The function *`findByStringKey()`* finds data by the first word in the string.
-Important to write the *`fullName`* separated by a space.
+For convenience, you can use the queries from the examples section. Also, you can change the composition of the data output fields.
+*`id`*, *`num`*, *`name`*, *`fullName`* and *`brand`* fields accept string values. For *`first`* and *`offset`* use the Int.
+
+## Input data format
+The format of ID for users always is *"user-XXX"*, where XXX is the user number. Similarly for phones ID.
+Name is a string without extra characters like spaces. Same as brand.
+Write the *`fullName`* separated by a space, for example *"James Bond"*, because I slice the string by a space.
+Phone number have the format *"+This-is-YYY-ZZZZZ's-phone-number-0"*, where YYY is the user first name and ZZZZZ is the user last name.
 This implementation is not able to recognize invalid user input, so you need to follow the format specified in the examples section.
 
 ## GraphQL query examples
-Gets a document from CouchDB whose _id is docname:
+Gets an any document from CouchDB document by ID:
 ```css
 {
-  friendByID (id: "81b335fe33591a6a52da654478007253") {
-    _id
-    user_id
+  userByID(id: "user-007") {
     first_name
     last_name
-    phone_number
+    phone_model {
+      brand
+      model
+    }
+  }
+}
+
+{
+  phoneByID(id: "phone-003") {
+    brand
+    model
+    users {
+      first_name
+      last_name
+    }
   }
 }
 ```
-List all the docs of each element in the database:
+Gets the user data from DB by phone number:
 ```css
 {
-  friends {
-    _id
-    user_id
+  userByPhoneNum(num: "+This-is-Tom-Holland's-phone-number-0") {
     first_name
     last_name
-    phone_number
+    phone_model {
+      brand
+      model
+    }
   }
 }
 ```
-Gets a user data from DB by phone number:
+Also, you can get some users by user first name:
 ```css
 {
-  friendByPhone (phone: "+This-is-Jane-Doe's-phone-number-5") {
-    _id
-    user_id
+  userByName(name: "John") {
     first_name
     last_name
-    phone_number
+    phone_model {
+      brand
+      model
+    }
   }
 }
 ```
-Gets a user data from DB by user first name:
+Or do you need a specific user? Gets all info about interesting user by user fullName:
 ```css
 {
-  friendByName (name: "Tom") {
-    _id
-    user_id
+  userByFullName(fullName: "John Doe") {
     first_name
     last_name
-    phone_number
+    phone_model {
+      brand
+      model
+    }
   }
 }
 ```
-Gets a user data from DB by user full name:
+You can list all phone brands and check who is using this brand:
 ```css
 {
-  friendByFullName (fullName: "Tom Holland") {
-    _id
-    user_id
-    first_name
-    last_name
-    phone_number
+  phoneByBrand(brand: "Apple") {
+    model
+    users {
+      first_name
+      last_name
+    }
   }
 }
 ```
-Search elements by arbitrary string key:
+And finally, you can get the list of all the docs of each element from the database. For a user list I recommend using a start offset of 16, otherwise you might get an empty list. I haven't figured out how to fix this yet.
 ```css
 {
-  findByStringKey (stringKey: "002") {
-    _id
-    user_id
+  users(first: 3, offset: 16) {
     first_name
     last_name
-    phone_number
+    phone_model {
+      brand
+      model
+    }
+  }
+}
+
+{
+  phones(first: 3, offset: 0) {
+    brand
+    model
+    users {
+      first_name
+      last_name
+    }
   }
 }
 ```
-All fields can be customized to suit your needs.
+All fields can be customized to suit your needs. 
+I was happy to work on it.
+Have a good day!

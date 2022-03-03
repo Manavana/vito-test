@@ -1,10 +1,10 @@
 const graphql = require('graphql');
-//const connections = require('graphql-connections')
 
 const nano = require('nano')('http://admin:123@localhost:5984');
-const test_db = nano.db.use('vito_test_db');
+const name_db = 'vito_test';
+const test_db = nano.db.use(name_db);
 
-const { GraphQLID, GraphQLString, GraphQLList, GraphQLObjectType, GraphQLSchema, GraphQLInt, GraphQLScalarType } = graphql;
+const { GraphQLID, GraphQLString, GraphQLList, GraphQLObjectType, GraphQLSchema, GraphQLInt } = graphql;
 
 async function getCard(id) {
     const doc = await test_db.get(id);
@@ -30,8 +30,8 @@ async function findByFullName(fullName) {
     return response.docs;
 };
 
-async function viewAll(type) {
-    const doclist = await test_db.list({ include_docs: true });
+async function viewAll(type, lim, off) {
+    const doclist = await test_db.list({ include_docs: true, limit: lim, skip: off });
     var userList = [];
     var phoneList = [];
     for (let i = 0; i < doclist.rows.length; i++) {
@@ -119,10 +119,10 @@ async function createUserList(arr) {
 };
 
 const userType = new GraphQLObjectType({
-    name: "Friend",
+    name: "User",
     fields: () => ({
         _id: { type: GraphQLID },
-        user_id: { type: GraphQLInt },
+        user_id: { type: GraphQLString },
         first_name: { type: GraphQLString },
         last_name: { type: GraphQLString },
         phone_number: { type: new GraphQLList(GraphQLString) },
@@ -151,18 +151,9 @@ const brandType = new GraphQLObjectType({
     }),
 });
 
-// Pagination scheme should be here
-
 const queryRootType = new GraphQLObjectType({
     name: "Query",
     fields: () => ({
-        /*findByStringKey: {
-            type: new GraphQLList(friendType), // ¬ќ«ћќ∆Ќќ Ќјƒќ ѕ≈–≈ƒ≈Ћј“№, чтобы поиск был во всех доках и дл€ всех типов ??UNION?? или как-то иначе объединить типы??
-            args: { stringKey: { type: GraphQLString } },
-            resolve(source, { stringKey }) {
-                return findByArbitraryStringKey(stringKey)
-            }
-        },*/
         userByID: {
             type: userType,
             args: { id: { type: GraphQLID } },
@@ -193,8 +184,9 @@ const queryRootType = new GraphQLObjectType({
         },
         users: {
             type: new GraphQLList(userType),
-            resolve() {
-                return viewAll("user");
+            args: { first: { type: GraphQLInt }, offset: { type: GraphQLInt } },
+            resolve(source, { first, offset }) {
+                return viewAll("user", first, offset);
             }
         },
         phoneByID: {
@@ -213,8 +205,9 @@ const queryRootType = new GraphQLObjectType({
         },
         phones: {
             type: new GraphQLList(brandType),
-            resolve() {
-                return viewAll("phone");
+            args: { first: { type: GraphQLInt }, offset: { type: GraphQLInt } },
+            resolve(source, { first, offset }) {
+                return viewAll("phone", first, offset);
             }
         },
     }),
