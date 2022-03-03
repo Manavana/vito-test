@@ -110,6 +110,8 @@ You can list all phone brands and check who is using this brand:
 }
 ```
 And finally, you can get the list of all the docs of each element from the database. For a user list I recommend using a start offset of 16, otherwise you might get an empty list. I haven't figured out how to fix this yet.
+
+You can set the number of documents on the screen with the field *first* and move around changing *offset*.
 ```css
 {
   users(first: 3, offset: 16) {
