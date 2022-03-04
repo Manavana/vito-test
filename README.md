@@ -5,12 +5,16 @@ ____
 API allows the user to request only the required data.
 ____
 ## Getting started
-Before starting work, you need to create a database and fill it with documents. Open the file *`createDB.ts`* and run the script.
+Before starting work, you need to create a database and fill it with documents. Open the file *`createDB.ts`*, enter your login and password at the DB link and run the script.
+
+`http://LOG:PASSW@localhost:5984`
+
 The script is launched through the Developer PowerShell or command line:
 ```c#
 npm run create
 ```
 When the database is created, a corresponding message will appear on the command line.
+Then you need to change the login and password at the DB link in the file *`schema.ts`*.
 After that you may start the server script by the command:
 ```c#
 npm run start

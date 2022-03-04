@@ -5,7 +5,7 @@
   "main": "server.js",
   "author": "",
   "scripts": {
-    "start": "nodemon server.ts",
+    "start": "node server.ts",
     "create": "node createDB.ts",
     "compilation": "tsc"
   },
